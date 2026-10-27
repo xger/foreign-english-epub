@@ -1,0 +1,4 @@
+interface:
+  display_name: "Continuous English Reading Guide"
+  short_description: "Plan chunks, write English guidance, assemble one EPUB"
+  default_prompt: "Use $foreign-english-epub to plan this book by input/output budgets, generate each chunk independently, then concatenate the completed guide into one EPUB."

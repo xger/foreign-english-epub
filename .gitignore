@@ -1,0 +1,42 @@
+# Local Python / Node dependencies and caches
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+.test-tmp/
+.review-temp/
+.pytest_cache/
+.coverage
+
+# Books, authored guidance and local project state
+*.epub
+*.pdf
+books/
+source/
+output/
+build/
+continuous-reading/
+projects/
+drafts/
+chunk-drafts/
+batches/
+staging/
+transactions/
+qa/
+workflow.json
+source-index.json
+chunk-plan.json
+chunk-progress.json
+reading-progress.json
+audit-report.json
+journal.json
+*.lock
+last-good.epub
+
+# Local credentials and operating-system files
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db

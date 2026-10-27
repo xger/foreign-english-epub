@@ -1,0 +1,10 @@
+{
+  "name": "foreign-english-epub",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Optional browser checks for English guided-reading EPUBs",
+  "license": "MIT",
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}
