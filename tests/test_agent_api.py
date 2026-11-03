@@ -74,3 +74,10 @@ class SchedulerTests(unittest.TestCase):
   with self.assertRaises(w.WorkflowError):self.op('config.update',patch={'validation_constraints':{'exact_source':False}})
   with self.assertRaises(w.WorkflowError):api.dispatch({'api_version':'99','operation':'capabilities'})
   self.assertIn('preview.export',api.dispatch({'api_version':'1.0','operation':'capabilities'})['result']['operations'])
+
+ def test_legacy_commands_share_entry_without_source_migration(self):
+  result=self.op('legacy.workflow',command='init',source=str(self.source),output=str(self.project/'Legacy.epub'))
+  self.assertEqual(result['source_paragraphs_covered'],0)
+  result=self.op('legacy.workflow',command='next',max_paragraphs=1)
+  self.assertEqual(len(result['paragraphs']),1)
+  self.assertFalse((self.project/'source-memory.json').exists())

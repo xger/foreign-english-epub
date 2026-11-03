@@ -13,6 +13,9 @@ Profiles are reusable, source-independent specifications. Import a complete prof
 | Operation | Parameters and result |
 | --- | --- |
 | capabilities | No project required; list operations and API version |
+| legacy.workflow | command: init/next/commit/stage/build/status/audit/recover; original named arguments; no source migration required |
+| legacy.plan | command: plan/show; plan receives capacity object |
+| legacy.chunks | command: next/save/status/assemble; save receives draft_path |
 | config.get | Return current/default reusable profile |
 | config.update | patch, config or config_file; optional expected_revision |
 | init | source path, optional title, start_member, skip_members; freezes source and index without planning |

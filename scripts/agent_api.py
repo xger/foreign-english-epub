@@ -15,7 +15,7 @@ DEFAULT = {
  "parameters": {"source_language": "fr", "explanation_language": "en", "source_proficiency": "beginner", "explanation_proficiency": "advanced", "reading_goal": "close reading", "language_depth": "detailed", "interpretation_depth": "detailed", "focus": ["syntax", "pronoun reference", "argument"], "translation_focus": ["fidelity", "readability"], "capacity": {"context_window":32768,"max_output_tokens":8192,"overhead_tokens":4096,"safety_factor":0.65,"chars_per_token":3,"expansion_ratio":12}},
  "generation_rules": {"original":True,"language":True,"translation":True,"thought":True,"continuous_prose":True},
  "validation_constraints": {"exact_source":True,"notes_required":True,"max_memory_entries":32,"max_memory_entry_characters":500,"max_summary_characters":2000}}
-OPS = ["capabilities","config.get","config.update","init","preview.select","preview.context","preview.save","preview.export","preview.approve","plan","task.next","task.save","memory.update","status","assemble","audit"]
+OPS = ["legacy.workflow","legacy.plan","legacy.chunks","capabilities","config.get","config.update","init","preview.select","preview.context","preview.save","preview.export","preview.approve","plan","task.next","task.save","memory.update","status","assemble","audit"]
 
 def digest(v): return w.sha(w.json_bytes(v))
 def read(root,name,default=None):
@@ -172,6 +172,22 @@ def execute(operation,project=None,parameters=None):
  root=Path(project).resolve();root.mkdir(parents=True,exist_ok=True)
  # Serialize scheduler mutations and context reads independently from legacy locks.
  with w.writer_lock(root/"scheduler-lock"):
+  if operation=="legacy.workflow":
+   command=p["command"]
+   handlers={"init":w.command_init,"next":w.command_next,"commit":w.command_commit,"stage":w.command_commit,"build":w.command_build,"status":w.command_status,"audit":w.command_audit,"recover":w.command_recover}
+   w.require(command in handlers,"Unknown legacy workflow command")
+   args={"project":root,"source_language":"fr","title":"Guided reading","start_member":None,"skip_member":[],"max_paragraphs":12,"defer_build":command=="stage",**{k:v for k,v in p.items() if k!="command"}}
+   args["project"]=root
+   return handlers[command](Args(**args))
+  if operation=="legacy.plan":
+   w.require(p["command"] in ["plan","show"],"Unknown legacy planner command")
+   return planner.create_plan(root,p["capacity"]) if p["command"]=="plan" else planner.load_plan(root)
+  if operation=="legacy.chunks":
+   command=p["command"]
+   w.require(command in ["next","save","status","assemble"],"Unknown legacy chunk command")
+   if command=="save":return chunks.save(root,p["draft_path"])
+   if command=="assemble":return chunks.assemble(root,p.get("allow_incomplete_source_review",False))
+   return chunks.next_chunk(root) if command=="next" else chunks.status(root)
   if operation=="config.get": return profile(root)
   if operation=="config.update": return config_update(root,p)
   if operation=="init":
