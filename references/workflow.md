@@ -1,3 +1,7 @@
+# Legacy helper protocol (compatibility)
+
+New workflows use [the unified execution contract](execution-contract.md), including the mandatory preview approval gate. The commands below retain the original interface and do not enforce that gate.
+
 # Plan → generate chunks → concatenate
 
 Python 3.10+ and `lxml` are required. All scripts are local and make no model/API calls. Store book projects in the user's authorized workspace, outside the installed skill folder. Commands below are relative to the skill root; use absolute script paths when working from another directory. `PROJECT`, `SOURCE.epub`, `MASTER.epub`, draft paths and QA paths are user-selected locations outside the skill folder.

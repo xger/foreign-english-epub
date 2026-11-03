@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "spec_version": "2.0",
+  "parameters": {
+    "source_language": "fr",
+    "explanation_language": "en",
+    "source_proficiency": "beginner",
+    "explanation_proficiency": "advanced",
+    "reading_goal": "close reading",
+    "language_depth": "detailed",
+    "interpretation_depth": "detailed",
+    "focus": [
+      "syntax",
+      "pronoun reference",
+      "argument"
+    ],
+    "translation_focus": [
+      "fidelity",
+      "readability"
+    ],
+    "capacity": {
+      "context_window": 32768,
+      "max_output_tokens": 8192,
+      "overhead_tokens": 4096,
+      "safety_factor": 0.65,
+      "chars_per_token": 3,
+      "expansion_ratio": 12
+    }
+  },
+  "generation_rules": {
+    "original": true,
+    "language": true,
+    "translation": true,
+    "thought": true,
+    "continuous_prose": true
+  },
+  "validation_constraints": {
+    "exact_source": true,
+    "notes_required": true,
+    "max_memory_entries": 32,
+    "max_memory_entry_characters": 500,
+    "max_summary_characters": 2000
+  }
+}

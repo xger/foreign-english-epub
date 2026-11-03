@@ -1,4 +1,4 @@
-# Continuous English guided-reading format
+# Continuous explanation-language guided-reading format
 
 This reference describes the reader-facing text. Its headings, field names and production notes do not appear in the EPUB. Apply the user's explicit format instructions when they differ.
 
@@ -9,9 +9,9 @@ Keep the source's reading order. Use each original chapter heading once as an `h
 For each source sentence or meaningful fragment, present this sequence without visible category labels:
 
 1. The exact original in its own italic paragraph, with the correct source-language `lang` and `xml:lang` values.
-2. Connected English paragraphs explaining vocabulary, phrases and syntax.
-3. A complete, faithful English rendering in an ordinary paragraph, introduced naturally and enclosed in quotation marks.
-4. Connected English interpretation grounded in this sentence and its surrounding text.
+2. Connected explanation-language paragraphs explaining vocabulary, phrases and syntax.
+3. A complete, faithful explanation-language rendering in an ordinary paragraph, introduced naturally and enclosed in quotation marks.
+4. Connected explanation-language interpretation grounded in this sentence and its surrounding text.
 
 Let the sentence's difficulty determine the explanation length. A short transition still needs its original, language explanation, full rendering and interpretation. Do not replace sentence-level guidance with a chapter summary.
 
@@ -26,7 +26,7 @@ Help the reader follow how the original works, rather than merely listing dictio
 - For important verbs, identify the base form, the form used and its meaning. Explain tense, mood, voice or reflexive constructions when needed.
 - Clarify pronoun reference, negation scope, conditions, agreement, word order and omitted material where relevant to the actual source language.
 - Explain idioms, register, older usages, false friends, wordplay and context-dependent senses when they affect the reading.
-- Show how a long sentence's parts reconnect. Do not force the source word order into unnatural English.
+- Show how a long sentence's parts reconnect. Do not force the source word order into unnatural explanation-language.
 - Preserve real ambiguities and identify the interpretation being used. Verify uncertain grammatical or lexical claims through authoritative sources when necessary.
 
 Use the grammar of the actual source language. Examples from one language are not a framework to impose on another.
@@ -47,9 +47,9 @@ Retain meaningful superscripts, subscripts, mathematical notation, non-Latin scr
 
 Generate only the source spans assigned to the current chunk. Nearby source supplied as context is read-only. Each original span must occur once in the completed guide; adjacent chunk files must neither repeat nor omit a sentence. A long paragraph split for capacity is reunited and checked during final concatenation.
 
-Read every attached source note, including continuation paragraphs. Its call number may be removed from the displayed original, but its substance must be integrated into the matching English explanation or interpretation. Record the note's source ID internally. Distinguish later editorial notes from the original author's words when that distinction affects interpretation.
+Read every attached source note, including continuation paragraphs. Its call number may be removed from the displayed original, but its substance must be integrated into the matching explanation-language explanation or interpretation. Record the note's source ID internally. Distinguish later editorial notes from the original author's words when that distinction affects interpretation.
 
-Do not silently correct suspected source errors. Explain a material uncertainty locally and record any deliberate correction separately. Necessary external source links may be embedded in the relevant English paragraph without creating an extra reading appendix.
+Do not silently correct suspected source errors. Explain a material uncertainty locally and record any deliberate correction separately. Necessary external source links may be embedded in the relevant explanation-language paragraph without creating an extra reading appendix.
 
 ## Example of the visible prose
 
@@ -69,4 +69,6 @@ Use a readable reflowable layout with ordinary paragraph spacing. Do not add car
 
 Before delivery, check exact source coverage, note integration, meaningful scripts and formatting, chapter joins, unique anchors and navigation. Inspect representative pages at narrow width and enlarged font settings. Ensure the final EPUB matches the staging XHTML that was inspected.
 
-Whole-book completion also requires handling substantive source material outside indexed paragraphs, such as tables, images containing text, formulas or unreviewed exclusions. Structural checks cannot establish translation quality; the author must review the English and its interpretation. Custom package and browser checks do not constitute EPUBCheck certification or a physical-reader test.
+Whole-book completion also requires handling substantive source material outside indexed paragraphs, such as tables, images containing text, formulas or unreviewed exclusions. Structural checks cannot establish translation quality; the author must review the explanation-language and its interpretation. Custom package and browser checks do not constitute EPUBCheck certification or a physical-reader test.
+
+The reusable profile defines the actual explanation language and learner strategy; English remains the default.

@@ -1,8 +1,8 @@
 # Foreign-language → English guided reading EPUB
 
-A reusable Codex skill for reading a foreign-language book sentence by sentence in English.
+A reusable guided-reading skill with configurable source and explanation languages, learner strategy, real-reader preview and deterministic single-task scheduling.
 
-**Plan the whole input → generate each chunk separately → concatenate once into one EPUB.**
+**Configure → preview real samples → human approval → calibrate and plan → bounded tasks → final EPUB.**
 
 Each reading unit preserves the original sentence, explains its vocabulary and grammar, gives a complete English rendering, and interprets its meaning in context. The final book reads continuously: original chapter headings appear once, with no visible unit numbers, teaching-category subtitles, exercises, or glossary.
 
@@ -42,7 +42,8 @@ Keep source books, generated projects, and outputs **outside the installed skill
 $foreign-english-epub
 
 Turn /absolute/path/book.epub into a complete English guided-reading EPUB.
-First plan all remaining source text against declared input/output budgets.
+First prepare real-source preview samples and obtain my explicit approval.
+Then calibrate output length and plan tasks within conservative budgets.
 Generate each planned chunk as a separate explanation file, then concatenate
 the completed chunks in original book order. Reuse approved work if present.
 Save the final book to /absolute/path/reading-project/Guided_Reading.epub.
@@ -50,39 +51,35 @@ Save the final book to /absolute/path/reading-project/Guided_Reading.epub.
 
 You can also ask the agent to resume an existing project. One invocation should keep processing the requested scope; internal chunks are checkpoints, not separately delivered volumes. An interruption leaves accepted drafts available for the next invocation. The skill is not a background scheduler.
 
-## Workflow
+## Unified agent interface (v0.2)
 
-1. **Plan all remaining input.** Read EPUB spine order, chapters, paragraphs, and notes. Declare context and output budgets, estimate the expansion into English teaching prose, and reserve prompt/context overhead and a safety margin. Divide at chapter and paragraph boundaries; subdivide oversized paragraphs into sentences, then meaningful clauses when necessary. Save the complete, nonoverlapping plan before generating new explanations.
-2. **Generate independent chunks.** The model reads each owned source span and attached notes, with limited read-only neighbouring context. It writes and reviews the original, English language explanation, complete rendering, and interpretation in a separate JSON draft. Saving a draft validates and checkpoints it without rebuilding the book.
-3. **Concatenate and assemble.** When every planned chunk is present, join the explanation units in source order, reunite split paragraphs, include any approved prefix, validate coverage, and build one final EPUB. Missing chunks block assembly. The user never has to merge installments.
+The platform-neutral entry point is `python scripts/agent_api.py --request request.json`
+(or `--request -` for JSON stdin). The functional core contract is in
+[SKILL.md](SKILL.md); host-specific invocation is in `agents/openai.yaml`.
 
-Token counts are a configurable character-based heuristic. The scripts cannot discover the running model's true limits; use declared working budgets and calibrate the expansion ratio against representative guidance. An indivisible span or attached note that still exceeds budget stops planning rather than being truncated.
-
-## Local helper commands
-
-Run these from the skill directory, using absolute paths for book data. Example capacity values below are illustrative, not claims about a particular model:
-
-```sh
-python scripts/epub_workflow.py init --source /books/example.epub --project /reading/example --title "Example — English guided reading" --source-language fr --output /reading/example/Guided_Reading.epub
-python scripts/plan_chunks.py plan --project /reading/example --context-window 32768 --max-output-tokens 8192 --expansion-ratio 12
-python scripts/chunk_pipeline.py next --project /reading/example
+```json
+{"api_version":"1.0","operation":"config.get","project":"/reading/example"}
 ```
 
-The model then authors a draft using the returned chunk identity and plan hash. After review:
+New workflow order:
 
-```sh
-python scripts/chunk_pipeline.py save --project /reading/example --draft /reading/example/drafts/chunk-000001.json
-python scripts/chunk_pipeline.py status --project /reading/example
-```
+1. `config.get/update`: import an existing [profile](profiles/default.json) or turn conversational preferences into explicit patches, including both languages and learner abilities.
+2. `init`: freeze the source snapshot and index; do not plan chunks yet.
+3. `preview.select/context/save`: explain three reviewed real-source examples (simple syntax, complex syntax, deep logical interpretation).
+4. `preview.export`: build **Preview.epub** using the production exporter, for inspection in the actual reading platform.
+5. `preview.approve`: record the human's explicit confirmation of the exact exported preview. Changed profile/samples invalidate approval.
+6. `plan`: use measured sample output expansion and conservative margins to plan formal tasks internally.
+7. `task.next/save`: the deterministic scheduler selects one task; a worker generates only from its bounded Context Builder packet.
+8. `memory.update`: selectively retain necessary terminology, referents, context and conventions; no update is required for most chunks.
+9. `assemble/audit`: concatenate and export one final book after all tasks are complete.
 
-Repeat `next → model authors/reviews → save`. Once all chunks are accepted:
+See [the execution contract](references/execution-contract.md) for every request,
+calibration formulas, memory schemas and isolation boundaries. The scripts do not
+call a model API: the host runs intelligent workers; the scheduler owns data and
+progress. Do not load the complete source index into a generation worker.
 
-```sh
-python scripts/chunk_pipeline.py assemble --project /reading/example
-python scripts/epub_workflow.py audit --project /reading/example
-```
-
-See [workflow details and the draft schema](references/workflow.md) and the [reading-format specification](references/format.md).
+The existing helper commands remain supported as compatibility interfaces;
+[legacy command details](references/workflow.md) are not the new default workflow.
 
 ## Optional browser checks
 
@@ -123,7 +120,7 @@ This repository contains the reusable skill and original test examples, not sour
 
 ## 中文简介
 
-这是一个“外语原文 → 英文逐句导读”的 Codex skill。先结合原文规模与模型输入/输出预算规划全部分块，再逐块生成独立解释文本，最后按原书顺序统一拼接为一个 EPUB。断点续接不需要用户手动合并文件。实际英文解释由模型撰写，脚本负责规划、校验、存档和装配。
+这是一个“外语原文 → 英文逐句导读”的 Codex skill。先结合原文规模与模型输入/输出预算规划全部分块，再在真实样例预览并获用户确认后，校准预算并规划任务；由调度器分发有界任务、选择性维护一致性记忆，最终拼接为一个 EPUB。断点续接不需要用户手动合并文件。实际英文解释由模型撰写，脚本负责规划、校验、存档和装配。
 
 ## License
 
