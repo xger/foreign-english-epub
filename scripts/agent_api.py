@@ -12,11 +12,11 @@ import short_term
 EXPORT_LOCK = threading.RLock()
 API_VERSION = "1.0"
 DEFAULT = {
- "schema_version": 1, "revision": 1, "spec_version": "3.0",
+ "schema_version": 1, "revision": 1, "spec_version": "4.0",
  "parameters": {"short_term_tokens":768,"source_language": "fr", "explanation_language": "en", "source_proficiency": "beginner", "explanation_proficiency": "advanced", "reading_goal": "close reading", "language_depth": "detailed", "interpretation_depth": "detailed", "focus": ["syntax", "pronoun reference", "argument"], "translation_focus": ["fidelity", "readability"], "capacity": {"context_window":32768,"max_output_tokens":8192,"overhead_tokens":4096,"safety_factor":0.65,"chars_per_token":3,"expansion_ratio":12}},
  "generation_rules": {"original":True,"language":True,"translation":True,"thought":True,"continuous_prose":True},
  "validation_constraints": {"exact_source":True,"notes_required":True,"max_memory_entries":32,"max_memory_entry_characters":500,"max_summary_characters":2000}}
-OPS = ["generation.run","generation.status","legacy.workflow","legacy.plan","legacy.chunks","capabilities","config.get","config.update","init","preview.select","preview.context","preview.save","preview.export","preview.approve","plan","task.next","task.save","memory.update","status","assemble","audit"]
+OPS = ["job.start","job.status","job.stop","generation.run","generation.status","legacy.workflow","legacy.plan","legacy.chunks","capabilities","config.get","config.update","init","preview.select","preview.context","preview.save","preview.export","preview.approve","plan","task.next","task.save","memory.update","status","assemble","audit"]
 
 def digest(v): return w.sha(w.json_bytes(v))
 def read(root,name,default=None):
@@ -173,6 +173,9 @@ def approval(root):
 
 def execute(operation,project=None,parameters=None):
  p=parameters or {}
+ if operation in ["job.start","job.status","job.stop"]:
+  import book_job
+  return book_job.start(project,**p) if operation=="job.start" else book_job.status(project) if operation=="job.status" else book_job.stop(project)
  if operation=="generation.run":
   import generation_scheduler
   return generation_scheduler.run(project,**p)

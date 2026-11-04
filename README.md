@@ -80,6 +80,14 @@ can launch provider-specific model workers; those workers generate only text. Do
 The existing helper commands remain supported as compatibility interfaces;
 [legacy command details](references/workflow.md) are not the new default workflow.
 
+## One request for a complete book (v0.4)
+
+Use `job.start` after preview approval, with an explicit whole-book budget. It
+returns a job identity and starts a detached supervisor that automatically
+renews bounded scheduler batches, checkpoints independent chunk workers and
+exports the final EPUB. The foreground chat only submits and monitors the job.
+See [whole-book execution and the Codex backend](references/book-jobs.md).
+
 ## Continuous generation (v0.3)
 
 After preview approval and planning, one `generation.run` request starts a bounded

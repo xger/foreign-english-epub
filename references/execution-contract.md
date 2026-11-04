@@ -1,4 +1,4 @@
-# Unified execution contract — API 1.0 / specification 3.0
+# Unified execution contract — API 1.0 / specification 4.0
 
 Run `python scripts/agent_api.py --request request.json`, or use `--request -` for JSON stdin. Agents may call `dispatch(request)` in-process. Successful responses contain `api_version, ok, result`; CLI errors contain `api_version, ok:false, error` and exit code 2. The Python API raises validation errors.
 
@@ -73,3 +73,7 @@ Language configuration is applied by an additive exporter adapter around the exi
 `generation.run` and `generation.status` extend API 1.0 without replacing existing operations. The scheduler owns fresh worker launches, validation, checkpoints, bounded retries and local leaf replanning. See [the continuous execution contract](continuous-generation.md). The source and original chunk plan remain immutable; concatenations carry validated per-call leaf proofs. Context packets now include short_term_memory and context_budget; short_term_tokens has its own reserve.
 
 The earlier host-only worker description above remains relevant to custom manual adapters; the continuous runner and agents/openai_worker.py now supply a complete subprocess/model-call path. Neither this extension nor test code fabricates human preview approval.
+
+## Detached whole-book execution
+
+API 1.0 adds `job.start`, `job.status` and `job.stop`. Whole-book requests must route through these operations, not a foreground conversation loop. See [book-jobs.md](book-jobs.md) for total grants, automatic batch renewal, process lifetime and the approval boundary.

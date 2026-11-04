@@ -47,3 +47,10 @@ generation-events.jsonl
 generation-checkpoints/
 worker-results/
 short-term-memory.json
+
+# Detached book-job state
+book-job.json
+book-job-request.json
+book-job-launch.json
+book-job.stop
+book-job.log

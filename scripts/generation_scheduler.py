@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """One bounded run, many fresh worker processes; durable local recovery."""
 from __future__ import annotations
-import argparse, copy, json, math, os, subprocess, tempfile, time
+import argparse, copy, json, math, os, subprocess, tempfile, time, signal
 from pathlib import Path
 import agent_api as api
 import epub_workflow as w
@@ -55,7 +55,7 @@ def split(chunk, cap):
     return children
 
 
-def invoke(command, packet, timeout, output_limit, max_bytes):
+def invoke(command, packet, timeout, output_limit, max_bytes, stop_file=None):
     """stdin is the only task data; cwd is a fresh empty directory, no shell."""
     with tempfile.TemporaryDirectory(prefix="reading-worker-") as name:
         folder=Path(name)
@@ -63,17 +63,24 @@ def invoke(command, packet, timeout, output_limit, max_bytes):
         (folder/"input.json").write_bytes(w.json_bytes(request))
         with (folder/"input.json").open("rb") as inp, (folder/"output.json").open("wb") as out, (folder/"stderr.txt").open("wb") as err:
             env={**os.environ,"PYTHONIOENCODING":"utf-8"}
-            flags=subprocess.CREATE_NO_WINDOW if os.name=="nt" else 0
-            proc=subprocess.Popen(command,stdin=inp,stdout=out,stderr=err,cwd=folder,env=env,shell=False,creationflags=flags)
+            flags=(subprocess.CREATE_NO_WINDOW|subprocess.CREATE_NEW_PROCESS_GROUP) if os.name=="nt" else 0
+            proc=subprocess.Popen(command,stdin=inp,stdout=out,stderr=err,cwd=folder,env=env,shell=False,creationflags=flags,start_new_session=os.name!="nt")
             deadline=time.monotonic()+timeout
             try:
                 while proc.poll() is None:
+                    if stop_file and Path(stop_file).exists():raise WorkerFailure("user_stopped")
                     if (folder/"output.json").stat().st_size>max_bytes or (folder/"stderr.txt").stat().st_size>max_bytes:
                         raise WorkerFailure("output_overflow")
                     if time.monotonic()>deadline: raise WorkerFailure("timeout")
                     time.sleep(.03)
             finally:
-                if proc.poll() is None: proc.kill()
+                if proc.poll() is None:
+                    if os.name=="nt":
+                        subprocess.run(["taskkill","/PID",str(proc.pid),"/T","/F"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                    else:
+                        try:os.killpg(proc.pid,signal.SIGKILL)
+                        except ProcessLookupError:pass
+                    if proc.poll() is None:proc.kill()
                 proc.wait()
         if (folder/"output.json").stat().st_size>max_bytes: raise WorkerFailure("output_overflow")
         if proc.returncode: raise WorkerFailure("worker_exit")
@@ -92,7 +99,7 @@ def invoke(command, packet, timeout, output_limit, max_bytes):
 
 def run(project, worker_command, max_calls=100, max_seconds=3600, timeout_seconds=180,
         max_output_tokens_total=500000, max_retries=2, max_split_depth=6,
-        assemble=True, allow_incomplete_source_review=False, retry_blocked=False):
+        assemble=True, allow_incomplete_source_review=False, retry_blocked=False, stop_file=None):
     root=Path(project).resolve()
     w.require(isinstance(worker_command,list) and worker_command and all(isinstance(x,str) and x for x in worker_command),"worker_command must be an argument array")
     for value in [max_calls,max_seconds,timeout_seconds,max_output_tokens_total]: w.require(type(value) is int and value>0,"Run limits must be positive integers")
@@ -116,6 +123,7 @@ def run(project, worker_command, max_calls=100, max_seconds=3600, timeout_second
             state["status"]=value;w.atomic_json(root/"generation-run.json",state)
             return {**status(root),"run_calls":calls,"reserved_output_tokens":reserved}
         while True:
+            if stop_file and Path(stop_file).exists():return finish("stopped")
             api.frozen(root);api.approval(root)
             _,_,_,_,plan,_,accepted=chunks.load(root)
             if len(accepted)==len(plan["chunks"]):
@@ -156,7 +164,7 @@ def run(project, worker_command, max_calls=100, max_seconds=3600, timeout_second
                 else:
                     leaf["attempts"]+=1;calls+=1;reserved+=limit;state["calls"]+=1
                     transition(root,state,ident,leaf,"running")
-                    draft=invoke(worker_command,packet,min(timeout_seconds,max(1,int(max_seconds-(time.monotonic()-started)))),limit,max(4096,int(limit*cap["chars_per_token"]*8)))
+                    draft=invoke(worker_command,packet,min(timeout_seconds,max(1,int(max_seconds-(time.monotonic()-started)))),limit,max(4096,int(limit*cap["chars_per_token"]*8)),stop_file)
                     # Persist complete model output before validation, allowing replay.
                     w.atomic_json(cached,draft)
                     leaf["response_sha256"]=w.sha(cached.read_bytes())
@@ -175,6 +183,7 @@ def run(project, worker_command, max_calls=100, max_seconds=3600, timeout_second
             except (WorkerFailure,w.WorkflowError,ValueError,KeyError,TypeError,OSError) as error:
                 kind=error.kind if isinstance(error,WorkerFailure) else ("configuration_error" if isinstance(error,OSError) else "context_overflow" if "context" in str(error).lower() else "output_overflow" if "safe output budget" in str(error) else "validation_failed")
                 transition(root,state,ident,leaf,"failed",kind)
+                if kind=="user_stopped":return finish("stopped")
                 if kind in ["configuration_error","refused"]:
                     entry["state"]="blocked"
                     transition(root,state,ident,leaf,"blocked",kind);return finish("blocked")
