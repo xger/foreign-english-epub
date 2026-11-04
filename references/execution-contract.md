@@ -1,4 +1,4 @@
-# Unified execution contract — API 1.0 / specification 2.0
+# Unified execution contract — API 1.0 / specification 3.0
 
 Run `python scripts/agent_api.py --request request.json`, or use `--request -` for JSON stdin. Agents may call `dispatch(request)` in-process. Successful responses contain `api_version, ok, result`; CLI errors contain `api_version, ok:false, error` and exit code 2. The Python API raises validation errors.
 
@@ -50,11 +50,11 @@ Calibration estimates output tokens from actual saved sample JSON and input toke
 
 The scheduler process may parse the entire source index and accepted ledger. It never returns them to generation workers. A task packet contains task identity, profile, bounded consistency memory, current source spans and notes, plan identity, a short instruction and a context hash. Its serialized size plus expected output must fit the conservative context budget.
 
-The host should execute each generation as a separate limited worker task whose input is that packet plus fixed protocol instructions. This package does not call a model service, run an unbounded background loop, or enforce isolation inside a host's already-existing conversation. Do not paste the source archive/index into that conversation for formal generation.
+The host should execute each generation as a separate limited worker task whose input is that packet plus fixed protocol instructions. The continuous scheduler now launches fresh worker processes; provider-specific adapters may call a model service. It does not run an unbounded background loop or alter an already-existing host conversation. Do not paste the source archive/index into that conversation for formal generation.
 
 The agent proposes explanations and optional consistency changes. The scheduler chooses tasks, rejects stale packets and advances source paragraphs only when their final span has been accepted. Saved chunk files remain authoritative if a secondary progress snapshot needs reconstruction. Repeated planning does not clear progress.
 
-## Three memories
+## Durable memories and short-term extension
 
 1. source-memory.json binds immutable/source.epub and source-index.json hashes. The snapshot survives external edits to the originally supplied file; edits to the bound snapshot/index are rejected.
 2. chunk-progress.json plus task-progress.json track accepted tasks and fully processed source paragraphs. They hold no terminology or narrative interpretation.
@@ -67,3 +67,9 @@ Project-local memories are distinct from any host's global personal memory. No p
 The legacy init/next/commit/stage/build/audit/recover and plan/next/save/assemble command protocols are unchanged. Their behavior stays available for existing projects; the approval gate is enforced by the new scheduler entry point. Legacy callers can bypass the new workflow contract, so hosts must route formal new generation through agent_api.
 
 Language configuration is applied by an additive exporter adapter around the existing package generator. Preview and final export use the same adapter; default English keeps legacy package behavior. Required source-coverage and note checks are retained. The unified audit applies the same language adapter for byte-consistent validation.
+
+## Continuous execution extension
+
+`generation.run` and `generation.status` extend API 1.0 without replacing existing operations. The scheduler owns fresh worker launches, validation, checkpoints, bounded retries and local leaf replanning. See [the continuous execution contract](continuous-generation.md). The source and original chunk plan remain immutable; concatenations carry validated per-call leaf proofs. Context packets now include short_term_memory and context_budget; short_term_tokens has its own reserve.
+
+The earlier host-only worker description above remains relevant to custom manual adapters; the continuous runner and agents/openai_worker.py now supply a complete subprocess/model-call path. Neither this extension nor test code fabricates human preview approval.

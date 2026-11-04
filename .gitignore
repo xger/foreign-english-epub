@@ -40,3 +40,10 @@ last-good.epub
 !.env.example
 .DS_Store
 Thumbs.db
+
+# Continuous-generation project state
+generation-run.json
+generation-events.jsonl
+generation-checkpoints/
+worker-results/
+short-term-memory.json

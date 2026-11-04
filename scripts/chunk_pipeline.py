@@ -60,8 +60,38 @@ def validate_draft(draft, chunk, plan, language):
     w.require(isinstance(refs, list) and all(isinstance(n, str) for n in refs), "Invalid note records")
     w.require(len(refs) == len(set(refs)) and set(refs) == {n["id"] for n in chunk["footnotes"]}, "Missing, duplicated, or unexpected integrated notes")
     estimated_actual = planner.tokens(w.json_bytes(result).decode("utf8"), plan["capacity"])
-    w.require(estimated_actual <= plan["budget"]["safe_output_tokens"], "Draft exceeds declared safe output budget; review chunk size/capacity rather than truncating explanations")
+    if result.get("generation_parts") is not None:
+        validate_parts(result, chunk, plan, language)
+    else:
+        w.require(estimated_actual <= plan["budget"]["safe_output_tokens"], "Draft exceeds declared safe output budget; review chunk size/capacity rather than truncating explanations")
     return result
+
+
+def validate_parts(draft, parent, plan, language):
+    """A scheduler concatenation is not one model call. Verify each leaf instead."""
+    parts = draft["generation_parts"]
+    w.require(isinstance(parts, list) and 1 <= len(parts) <= 4096, "Invalid generation parts")
+    cursor, offset = 0, parent["spans"][0]["start"]
+    units, notes = [], []
+    for part in parts:
+        child, data = part["chunk"], part["draft"]
+        w.require("generation_parts" not in data and child["source_member"] == parent["source_member"], "Invalid nested generation parts")
+        for span in child["spans"]:
+            w.require(cursor < len(parent["spans"]), "Parts overlap source")
+            target = parent["spans"][cursor]
+            w.require(span["source_p"] == target["source_p"] and span["paragraph_length"] == target["paragraph_length"] and span["start"] == offset and
+                      offset <= span["end"] <= target["end"] and
+                      span["text"] == target["text"][offset-target["start"]:span["end"]-target["start"]], "Part source gap or mutation")
+            offset = span["end"]
+            if offset == target["end"]:
+                cursor += 1
+                if cursor < len(parent["spans"]): offset = parent["spans"][cursor]["start"]
+        expected = [n for n in parent["footnotes"] if any(s["source_p"] == n["source_p"] and
+                    (s["start"] <= n["call_offset"] < s["end"] or n["call_offset"] == s["end"] == s["paragraph_length"]) for s in child["spans"])]
+        w.require(child["footnotes"] == expected, "Part note ownership changed")
+        checked = validate_draft(data, child, plan, language)
+        units.extend(checked["units"]); notes.extend(checked.get("footnotes_integrated", []))
+    w.require(cursor == len(parent["spans"]) and units == draft["units"] and notes == draft["footnotes_integrated"], "Part concatenation differs from parent draft")
 
 
 def load(project):

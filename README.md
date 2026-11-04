@@ -6,7 +6,7 @@ A reusable guided-reading skill with configurable source and explanation languag
 
 Each reading unit preserves the original sentence, explains its vocabulary and grammar, gives a complete English rendering, and interprets its meaning in context. The final book reads continuously: original chapter headings appear once, with no visible unit numbers, teaching-category subtitles, exercises, or glossary.
 
-The model writes the explanations. The Python scripts plan, validate, save, and assemble them; they do **not** call a model API or automatically translate a book on their own.
+The model writes the explanations. The scheduler plans, launches independent model workers, validates, checkpoints and assembles. Provider-specific worker code handles model calls; the model only generates text.
 
 ## Install
 
@@ -74,12 +74,27 @@ New workflow order:
 9. `assemble/audit`: concatenate and export one final book after all tasks are complete.
 
 See [the execution contract](references/execution-contract.md) for every request,
-calibration formulas, memory schemas and isolation boundaries. The scripts do not
-call a model API: the host runs intelligent workers; the scheduler owns data and
-progress. Do not load the complete source index into a generation worker.
+calibration formulas, memory schemas and isolation boundaries. The deterministic helpers own data and progress. The continuous scheduler
+can launch provider-specific model workers; those workers generate only text. Do not load the complete source index into a generation worker.
 
 The existing helper commands remain supported as compatibility interfaces;
 [legacy command details](references/workflow.md) are not the new default workflow.
+
+## Continuous generation (v0.3)
+
+After preview approval and planning, one `generation.run` request starts a bounded
+continuous job: fresh worker process/model call → validation → checkpoint → next
+task → final EPUB. No repeated chat messages are needed within the run allowance.
+
+The supplied `agents/openai_worker.py` uses `OPENAI_API_KEY` and `READING_MODEL`
+from the environment. It makes a separate stateless API request for each task;
+it does not reuse desktop-chat credentials. Other backends can implement the
+same stdin/stdout worker protocol. Configure absolute executable and script paths.
+
+See [continuous generation](references/continuous-generation.md) for a complete
+request, limits, failure transitions, local splitting, interruption recovery and
+short-term text memory. Tests exercise subprocess scheduling and mock provider
+transport; they do not spend API credits or certify model-generated book quality.
 
 ## Optional browser checks
 

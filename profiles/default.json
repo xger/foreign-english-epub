@@ -1,8 +1,9 @@
 {
   "schema_version": 1,
   "revision": 1,
-  "spec_version": "2.0",
+  "spec_version": "3.0",
   "parameters": {
+    "short_term_tokens": 768,
     "source_language": "fr",
     "explanation_language": "en",
     "source_proficiency": "beginner",

@@ -38,7 +38,7 @@ class SchedulerTests(unittest.TestCase):
   while True:
    p=self.op('task.next')
    if p.get('phase')=='ready_to_assemble':break
-   self.assertEqual(set(p)-{'context_sha256'},{'task_id','kind','config','consistency_memory','chunk','plan_sha256','instruction'})
+   self.assertEqual(set(p)-{'context_sha256'},{'task_id','kind','config','consistency_memory','chunk','plan_sha256','instruction','short_term_memory','context_budget'})
    self.op('task.save',draft=self.draft(p),context_sha256=p['context_sha256'])
   self.assertEqual(self.op('status')['completed_paragraphs'],3)
   self.op('plan');self.assertEqual(self.op('status')['completed_paragraphs'],3)

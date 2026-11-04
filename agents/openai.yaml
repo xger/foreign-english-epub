@@ -1,4 +1,4 @@
 interface:
   display_name: "Continuous English Reading Guide"
   short_description: "Plan chunks, write English guidance, assemble one EPUB"
-  default_prompt: "Use $foreign-english-epub through agent_api.py: configure the learner profile, export and confirm Preview.epub, then schedule bounded tasks and assemble the final book."
+  default_prompt: "Use $foreign-english-epub through agent_api.py: configure the learner profile, export and confirm Preview.epub, then start bounded continuous generation with an independent worker backend and assemble the final book."
